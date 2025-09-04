@@ -11,21 +11,35 @@ if [ -f ".env" ]; then
   export $(grep -v '^#' .env | xargs)
 fi
 
+# Tenta obter usuário e nome do repositório a partir do git remoto
+REPO_URL="$(git -C "$PROJECT_DIR" remote get-url origin 2>/dev/null || true)"
+if [[ -n "$REPO_URL" && "$REPO_URL" =~ github.com[:/](.+)/(.+)\.git ]]; then
+  GITHUB_USER="${BASH_REMATCH[1]}"
+  GITHUB_REPO="${BASH_REMATCH[2]}"
+else
+  # Fallback seguro para repositórios novos
+  GITHUB_USER="seu-usuario"
+  GITHUB_REPO="$(basename "$PROJECT_DIR")"
+fi
+
 # Cria a estrutura de diretórios
 mkdir -p "$PROJECT_DIR/docs/templates"
 mkdir -p "$PROJECT_DIR/docs/registro-de-sessao"
 mkdir -p "$PROJECT_DIR/logs"
 
-# README.md
-if [ ! -f "$PROJECT_DIR/README.md" ]; then
-  cat > "$PROJECT_DIR/README.md" <<'EOF'
-# Projeto
+# Atualiza README.md com links e badges
+cat > "$PROJECT_DIR/README.md" <<EOF
+# Projeto: $GITHUB_REPO
+
+[![GitHub issues](https://img.shields.io/github/issues/$GITHUB_USER/$GITHUB_REPO)](https://github.com/$GITHUB_USER/$GITHUB_REPO/issues)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr/$GITHUB_USER/$GITHUB_REPO)](https://github.com/$GITHUB_USER/$GITHUB_REPO/pulls)
+[![GitHub stars](https://img.shields.io/github/stars/$GITHUB_USER/$GITHUB_REPO)](https://github.com/$GITHUB_USER/$GITHUB_REPO/stargazers)
+[![GitHub license](https://img.shields.io/github/license/$GITHUB_USER/$GITHUB_REPO)](LICENSE)
 
 Descrição breve do projeto.
 
-> Este repositório segue o [Pacote de Instruções do Agente de Codificação](./QWEN.md).
+> Este repositório segue o [Pacote de Instruções do Agente de Codificação](QWEN.md) e o [Protocolo do Agente](docs/AGENT_PROTOCOL.md).
 EOF
-fi
 
 # QWEN.md
 curl -sSL "https://raw.githubusercontent.com/peixoto-ops/setup_agent/main/QWEN.md" -o "$PROJECT_DIR/QWEN.md"
